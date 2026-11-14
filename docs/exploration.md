@@ -14,6 +14,13 @@ Les numéros de ligne ci-dessous sont ceux du fichier ouvert dans VS Code (la li
 | 46 | shipped | achat, validation, transporteur, estimée | livraison client |
 | 105 | invoiced | achat, validation, estimée | transporteur, livraison client |
 | 130 | processing | achat, validation, estimée | transporteur, livraison client |
+| 156 | shipped | achat, validation, transporteur, estimée | livraison client |
+| 164 | shipped | achat, validation, transporteur, estimée | livraison client |
+| 233 | shipped | achat, validation, transporteur, estimée | livraison client |
+| 268 | unavailable | achat, validation, estimée | transporteur, livraison client |
+| 301 | shipped | achat, validation, transporteur, estimée | livraison client |
+| 307 | shipped | achat, validation, transporteur, estimée | livraison client |
+| 326 | processing | achat, validation, estimée | transporteur, livraison client |
 
 ### Ce que je constate
 Les dates se remplissent dans l'ordre du cycle de vie de la commande :
@@ -21,6 +28,17 @@ achat → validation → remise au transporteur → livraison au client.
 Une commande non livrée s'arrête à une étape, et **toutes les dates suivantes sont vides**.
 Les valeurs vides sont donc normales : elles signifient « cette étape n'a pas eu lieu ».
 La date estimée de livraison est, elle, toujours renseignée.
+
+Trois profils se distinguent selon la dernière étape atteinte :
+- `invoiced` / `processing` / `unavailable` : validée mais jamais remise au transporteur (2 dates vides).
+- `shipped` : remise au transporteur mais jamais livrée (1 date vide).
+- Cas suspect : la ligne 164 est `shipped` depuis mai 2017 avec une livraison estimée au 2017-06-08.
+  Les données s'arrêtent en 2018 : cette commande n'est probablement jamais arrivée (colis perdu) ou le statut
+  n'a jamais été mis à jour. Un `shipped` ancien n'est donc pas « en cours », c'est un problème de livraison.
+  La ligne 326 (`processing` depuis octobre 2016) est dans le même cas.
+  Mesure : la dernière commande du fichier date du 2018-10-17, et pourtant 1 013 des 1 107 `shipped`,
+  300 des 301 `processing` et 280 des 314 `invoiced` avaient une livraison estimée avant août 2018.
+  La grande majorité de ces commandes « non livrées » sont donc bloquées, pas en cours.
 
 ### Mesure sur tout le fichier (dates vides par statut)
 
