@@ -1,5 +1,7 @@
 # Olist Analytics
 
+**🔗 [Voir le dashboard en ligne](https://mohamed-fofana-olist-analytics.streamlit.app/)**
+
 Projet data analyst de bout en bout : de 9 fichiers CSV bruts à un entrepôt PostgreSQL, des indicateurs
 métier en SQL avancé, des contrôles qualité et un dashboard Streamlit.
 
