@@ -9,14 +9,22 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.config import get_engine  # noqa: E402
+from src.config import DB_URL, get_engine  # noqa: E402
+
+DOSSIER_MART = Path(__file__).resolve().parent.parent / "data" / "mart"
 
 st.set_page_config(page_title="Olist Analytics", page_icon="📊", layout="wide")
 
 
 @st.cache_data(ttl=600)
 def charger(table: str) -> pd.DataFrame:
-    return pd.read_sql(f"SELECT * FROM mart.{table}", get_engine())
+    """Lit la base si DB_URL est défini (usage local), sinon les CSV exportés (version en ligne)."""
+    if DB_URL:
+        try:
+            return pd.read_sql(f"SELECT * FROM mart.{table}", get_engine())
+        except Exception:
+            pass
+    return pd.read_csv(DOSSIER_MART / f"{table}.csv")
 
 
 def euros(x: float) -> str:
@@ -29,7 +37,7 @@ st.caption("Ventes d'une place de marché brésilienne, 2016-2018. Ventes valide
 try:
     mensuel = charger("ventes_mensuelles")
 except Exception:
-    st.error("Base indisponible ou vide. Lancez d'abord : `python -m src.pipeline`.")
+    st.error("Données indisponibles. Lancez d'abord : `python -m src.pipeline` puis `python -m src.exporter_mart`.")
     st.stop()
 
 # Le début (2016) et la fin (fin 2018) sont incomplets : on propose de les exclure
@@ -74,8 +82,7 @@ with onglets[2]:
 
 with onglets[3]:
     st.subheader("Segments de clients")
-    seg = charger("segments_clients")
-    resume = seg.groupby("segment").agg(clients=("id_client", "count"), ca=("ca_total", "sum")).reset_index()
+    resume = charger("resume_segments").rename(columns={"chiffre_affaires": "ca"})
     a, b = st.columns(2)
     a.plotly_chart(px.pie(resume, names="segment", values="clients", hole=0.4), width="stretch")
     b.dataframe(resume.rename(columns={"segment": "Segment", "clients": "Clients", "ca": "CA (R$)"}),

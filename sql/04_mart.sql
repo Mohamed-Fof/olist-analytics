@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS mart.ventes_regions CASCADE;
 DROP TABLE IF EXISTS mart.retard_et_note CASCADE;
 DROP TABLE IF EXISTS mart.segments_clients CASCADE;
 DROP TABLE IF EXISTS mart.retention_cohortes CASCADE;
+DROP TABLE IF EXISTS mart.resume_segments CASCADE;
 
 -- Q1 : évolution des ventes, avec comparaison au mois précédent (LAG)
 CREATE TABLE mart.ventes_mensuelles AS
@@ -121,3 +122,12 @@ SELECT to_char(mois_cohorte, 'YYYY-MM') AS cohorte,
        round(100.0 * clients_actifs
              / FIRST_VALUE(clients_actifs) OVER (PARTITION BY mois_cohorte ORDER BY mois_depuis), 2) AS taux_retention_pct
 FROM activite;
+
+-- Résumé par segment (petit : c'est ce que lit le dashboard)
+CREATE TABLE mart.resume_segments AS
+SELECT segment,
+       count(*)                  AS clients,
+       sum(ca_total)             AS chiffre_affaires,
+       round(avg(nb_commandes), 2) AS commandes_par_client
+FROM mart.segments_clients
+GROUP BY segment;

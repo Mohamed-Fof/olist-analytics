@@ -6,3 +6,4 @@ data/raw/*.csv
 reports/*
 !reports/.gitkeep
 .DS_Store
+.vscode/
