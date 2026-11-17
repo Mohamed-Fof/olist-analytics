@@ -64,14 +64,28 @@ Trois profils se distinguent selon la dernière étape atteinte :
 On garde tous les statuts dans l'entrepôt. Les dates vides restent `NULL` (on ne les remplace pas).
 Les retards sont calculés uniquement quand la date de livraison existe.
 
-## Phase 6 : profilage SQL (à compléter)
+## Phase 6 : profilage SQL (requêtes dans `olist.session.sql`, graphiques via `python -m src.profil_raw`)
 
 | Constat | Mesure (mes chiffres) | Décision |
 |---|---|---|
-| Dates d'achat vides ou invalides | ... | Rejeter la commande → quarantaine |
-| Commande dont le client n'existe pas | ... | Rejeter → quarantaine |
-| Articles à prix ≤ 0 | ... | Rejeter → quarantaine |
-| review_id en double | ... | Garder 1 avis par commande (le plus récent) |
-| Produits sans catégorie / sans traduction | ... | Conserver, catégorie « unknown » |
-| Commandes sans article | ... | Conserver, marquer « vente non valide » |
-| Clients : 1 ligne par commande | ... | Dimension client = personne (customer_unique_id) |
+| Doublons de commandes | 99 441 lignes, 99 441 `order_id` distincts : 0 doublon | Aucune action |
+| Dates d'achat vides ou invalides | 0 vide, 0 au mauvais format | Rien à rejeter, mais on garde la règle en staging |
+| Commande dont le client n'existe pas | 0 | Rien à rejeter, on garde la règle en staging |
+| Articles à prix ≤ 0 | 0 | Rien à rejeter, on garde la règle en staging |
+| review_id en double | 814 en trop (1 603 lignes concernées) | Garder 1 avis par commande (le plus récent) |
+| Produits sans catégorie | 610 | Conserver, catégorie « unknown » |
+| Catégories sans traduction | 2 catégories (13 produits) : `portateis_cozinha_e_preparadores_de_alimentos`, `pc_gamer` | Conserver, utiliser le nom portugais |
+| Commandes sans article | 775 (603 unavailable, 164 canceled, 5 created, 2 invoiced, 1 shipped) | Conserver, marquer « vente non valide » |
+| Clients : 1 ligne par commande | 99 441 `customer_id` pour 96 096 personnes ; 2 997 personnes ont plus d'une commande | Dimension client = personne (`customer_unique_id`) |
+| Dates de livraison client vides | 2 965 (dont ~2 957 non livrées, 8 `delivered`) | Garder NULL, retard calculé seulement si la date existe |
+| Dates de remise transporteur vides | 1 783 | Garder NULL |
+| Période couverte | achats du 2016-09-04 au 2018-10-17 ; 2016 quasi vide (4 commandes en sept., 1 en déc.) | Analyser surtout 2017-2018 |
+
+### Lecture
+- Les données sont **plutôt propres** : aucune commande orpheline, aucun prix ≤ 0, aucun doublon de commande.
+  Les vrais problèmes sont les avis en double, les produits sans catégorie et les commandes sans article.
+- Les 775 commandes sans article sont presque toutes `unavailable` ou `canceled` : elles ne comptent pas dans le CA.
+- Seuls 3 % des `customer_id` sont des clients qui reviennent (2 997 personnes sur 96 096) : la rétention sera faible.
+
+### Graphiques (générés dans `reports/`, non versionnés)
+`statuts.html`, `problemes_qualite.html`, `commandes_par_mois.html`.
