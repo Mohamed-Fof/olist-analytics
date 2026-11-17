@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 DB_URL = os.getenv("DB_URL")
-if not DB_URL:
-    raise RuntimeError("DB_URL manquant : renseignez-le dans le fichier .env (voir .env.example).")
 
 
 def get_engine():
+    if not DB_URL:
+        raise RuntimeError("DB_URL manquant : renseignez-le dans le fichier .env (voir .env.example).")
     return create_engine(DB_URL)

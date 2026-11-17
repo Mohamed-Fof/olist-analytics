@@ -1,11 +1,11 @@
 """Teste la connexion à PostgreSQL et affiche l'encodage de la base.
 Usage :  python -m src.check_connection
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-from src.config import DB_URL
+from src.config import get_engine
 
-engine = create_engine(DB_URL)
+engine = get_engine()
 with engine.connect() as conn:
     version = conn.execute(text("SELECT version()")).scalar()
     encoding = conn.execute(
