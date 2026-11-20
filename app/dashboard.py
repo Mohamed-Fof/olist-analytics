@@ -91,10 +91,26 @@ with onglets[3]:
 with onglets[4]:
     st.subheader("Rétention par cohorte (part des clients qui rachètent n mois après)")
     ret = charger("retention_cohortes")
-    ret = ret[(ret.taille_cohorte >= 300) & (ret.mois_depuis <= 12)]
-    matrice = ret.pivot(index="cohorte", columns="mois_depuis", values="taux_retention_pct")
-    st.plotly_chart(px.imshow(matrice, aspect="auto", color_continuous_scale="Blues",
-                              labels={"x": "Mois après le 1er achat", "y": "Cohorte", "color": "%"}),
-                    width="stretch")
-    st.caption("Seules les cohortes d'au moins 300 clients sont affichées. La rétention est très faible : "
-               "moins de 1 % rachètent le mois suivant.")
+    # Dernier mois complet = dernière cohorte (les données s'arrêtent en cours de mois suivant)
+    dernier_mois = pd.Period(ret.cohorte.max(), "M")
+    # Le mois 0 vaut 100 % par définition : on l'écarte pour que l'échelle de couleurs serve
+    ret = ret[(ret.taille_cohorte >= 300) & ret.mois_depuis.between(1, 12)]
+    matrice = (ret.pivot(index="cohorte", columns="mois_depuis", values="taux_retention_pct")
+                  .reindex(columns=range(1, 13)))
+    for cohorte in matrice.index:
+        horizon = (dernier_mois - pd.Period(cohorte, "M")).n
+        observes = [m for m in matrice.columns if m <= horizon]
+        # Mois observé sans aucun rachat : absent du mart, la rétention vaut 0
+        matrice.loc[cohorte, observes] = matrice.loc[cohorte, observes].fillna(0)
+        # Mois non encore complet : on ne l'affiche pas
+        matrice.loc[cohorte, [m for m in matrice.columns if m > horizon]] = float("nan")
+    matrice = matrice.dropna(how="all")
+    fig = px.imshow(matrice, aspect="auto", color_continuous_scale="Blues", zmin=0,
+                    text_auto=".2f",
+                    labels={"x": "Mois après le 1er achat", "y": "Cohorte", "color": "%"})
+    fig.update_xaxes(dtick=1)
+    fig.update_traces(hovertemplate="Cohorte %{y}<br>Mois %{x}<br>Rétention : %{z:.2f} %<extra></extra>")
+    st.plotly_chart(fig, width="stretch")
+    st.caption("Cohortes d'au moins 300 clients. Le mois 0 (100 % par définition) est masqué pour rendre "
+               "les écarts lisibles ; les cases vides sont des mois pas encore observés. La rétention est "
+               "très faible : moins de 1 % des clients rachètent le mois suivant.")
