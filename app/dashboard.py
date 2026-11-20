@@ -62,6 +62,7 @@ with onglets[0]:
 with onglets[1]:
     gauche, droite = st.columns(2)
     cat = charger("ventes_categories").sort_values("rang").head(10)
+    cat["categorie"] = cat.categorie.str.replace("_", " ").str.capitalize()
     reg = charger("ventes_regions").sort_values("rang").head(10)
     gauche.subheader("Top 10 catégories")
     gauche.plotly_chart(px.bar(cat.iloc[::-1], x="chiffre_affaires", y="categorie", orientation="h",
@@ -73,12 +74,18 @@ with onglets[1]:
 with onglets[2]:
     st.subheader("Les retards pénalisent-ils la note ?")
     rn = charger("retard_et_note").sort_values("tranche_retard")
+    rn["tranche_retard"] = rn.tranche_retard.str.replace(r"^\d+\.\s*", "", regex=True)
     a, b = st.columns(2)
     a.plotly_chart(px.bar(rn, x="tranche_retard", y="note_moyenne", range_y=[1, 5],
                           labels={"tranche_retard": "", "note_moyenne": "Note moyenne"}), width="stretch")
     b.plotly_chart(px.bar(rn, x="tranche_retard", y="part_mauvaises_notes_pct",
                           labels={"tranche_retard": "", "part_mauvaises_notes_pct": "% de notes 1 ou 2"}), width="stretch")
-    st.info("Au-delà de 4 jours de retard, la grande majorité des clients donnent une mauvaise note.")
+    a_l_heure = rn.part_mauvaises_notes_pct.iloc[0]
+    retard_4_7 = rn.part_mauvaises_notes_pct.iloc[2]
+    retard_8 = rn.part_mauvaises_notes_pct.iloc[3]
+    st.info(f"Dès 4 jours de retard, la majorité des clients donnent une note de 1 ou 2 "
+            f"({retard_4_7:.0f} %, puis {retard_8:.0f} % au-delà d'une semaine), "
+            f"contre {a_l_heure:.0f} % quand la commande arrive à l'heure.")
 
 with onglets[3]:
     st.subheader("Segments de clients")
